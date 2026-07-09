@@ -111,18 +111,18 @@ function LoanTypeSelect() {
   );
 }
 
-// ─── Home page: "/" → Login then Loan Select ──────────────────────────────────
+// ─── Home page: "/" → Always show Login first, then Loan Select ───────────────
 function HomePage() {
-  const [loggedIn, setLoggedIn] = useState(() => !!localStorage.getItem('finmonk_access_token'));
+  const [showLoanSelect, setShowLoanSelect] = useState(false);
 
   const handleLogin = (phone: string) => {
     localStorage.setItem('finmonk_user_mobile', phone);
-    setLoggedIn(true);
+    setShowLoanSelect(true);
   };
 
   return (
     <>
-      {!loggedIn ? (
+      {!showLoanSelect ? (
         <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-12 bg-surface dark:bg-surface">
           <LoginScreen onContinue={handleLogin} />
         </div>
