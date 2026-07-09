@@ -64,11 +64,17 @@ export default function MultiStepFlow({ onExit, userMobile }: { onExit: () => vo
 
   // Create a draft application when the flow starts
   useEffect(() => {
+    console.log('[FinMonk] Creating personal loan draft...');
     createPersonalLoan().then((res) => {
+      console.log('[FinMonk] Create result:', res);
       if (res.success && res.data?.id) {
         setApplicationId(res.data.id);
+      } else {
+        console.error('[FinMonk] Failed to create application:', res);
       }
-    }).catch(console.error);
+    }).catch((err) => {
+      console.error('[FinMonk] Create application error:', err);
+    });
   }, []);
 
   const nextStep = () => setStep(s => s + 1);
@@ -80,8 +86,17 @@ export default function MultiStepFlow({ onExit, userMobile }: { onExit: () => vo
 
   // Save step data to backend, then advance
   const saveAndNext = async (stepName: 'personal-info' | 'loan-details' | 'employment' | 'address', data: Record<string, any>) => {
-    if (applicationId) {
-      await updatePersonalLoanStep(applicationId, stepName, data).catch(console.error);
+    // Remove undefined values (JSON.stringify already does this, but be explicit)
+    const cleanData = Object.fromEntries(
+      Object.entries(data).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    );
+    console.log(`[FinMonk] Saving step "${stepName}" for app ${applicationId}:`, cleanData);
+    if (applicationId && Object.keys(cleanData).length > 0) {
+      const result = await updatePersonalLoanStep(applicationId, stepName, cleanData).catch((err) => {
+        console.error(`[FinMonk] Failed to save step "${stepName}":`, err);
+        return null;
+      });
+      console.log(`[FinMonk] Save result:`, result);
     }
     nextStep();
   };
@@ -99,12 +114,12 @@ export default function MultiStepFlow({ onExit, userMobile }: { onExit: () => vo
       case 1: return <Step1PersonalInfo formData={formData} updateFormData={updateFormData} onNext={() => {
         const mobile = formData.mobileNumber.replace(/\D/g, '').slice(-10);
         saveAndNext('personal-info', {
-          firstName: formData.firstName || undefined,
-          lastName: formData.lastName || undefined,
-          email: formData.email || undefined,
-          dob: formData.dob || undefined,
-          pan: formData.panNumber || undefined,
-          mobile: mobile.length === 10 ? mobile : undefined,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          dob: formData.dob,
+          pan: formData.panNumber,
+          mobile: mobile,
         });
       }} />;
       case 2: return <Step2LoanDetails formData={formData} updateFormData={updateFormData} onNext={() => {
