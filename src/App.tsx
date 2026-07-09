@@ -125,12 +125,13 @@ function LoanTypeSelect({ onSelect }: { onSelect: (type: 'personal' | 'business'
 // ─── Main application flow (default route "/") ────────────────────────────────
 function MainApp() {
   const [view, setView] = useState<View>('landing');
+  const [userMobile, setUserMobile] = useState('');
   const navigate = useNavigate();
 
   const handleGetStarted = () => setView('otp-mobile');
 
-  const handleMobileContinue = (_phone: string) => {
-    // No OTP step — go directly to loan selection
+  const handleMobileContinue = (phone: string) => {
+    setUserMobile(phone);
     setView('loan-select');
   };
 
@@ -172,11 +173,11 @@ function MainApp() {
           )}
 
           {view === 'personal-flow' && (
-            <MultiStepFlow key="personal-flow" onExit={handleExit} />
+            <MultiStepFlow key="personal-flow" onExit={handleExit} userMobile={userMobile} />
           )}
 
           {view === 'business-flow' && (
-            <BusinessLoanFlow key="business-flow" onExit={handleExit} />
+            <BusinessLoanFlow key="business-flow" onExit={handleExit} userMobile={userMobile} />
           )}
         </AnimatePresence>
       </main>

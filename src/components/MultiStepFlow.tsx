@@ -54,9 +54,12 @@ const initialFormData: FormData = {
   yearsAtAddress: 0,
 };
 
-export default function MultiStepFlow({ onExit }: { onExit: () => void; key?: Key }) {
+export default function MultiStepFlow({ onExit, userMobile }: { onExit: () => void; userMobile?: string; key?: Key }) {
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [formData, setFormData] = useState<FormData>({
+    ...initialFormData,
+    mobileNumber: userMobile || '',
+  });
   const [applicationId, setApplicationId] = useState<string | null>(null);
 
   // Create a draft application when the flow starts
@@ -96,9 +99,9 @@ export default function MultiStepFlow({ onExit }: { onExit: () => void; key?: Ke
       case 1: return <Step1PersonalInfo formData={formData} updateFormData={updateFormData} onNext={() => {
         const mobile = formData.mobileNumber.replace(/\D/g, '').slice(-10);
         saveAndNext('personal-info', {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
+          firstName: formData.firstName || undefined,
+          lastName: formData.lastName || undefined,
+          email: formData.email || undefined,
           dob: formData.dob || undefined,
           pan: formData.panNumber || undefined,
           mobile: mobile.length === 10 ? mobile : undefined,

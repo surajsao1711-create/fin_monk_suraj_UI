@@ -78,10 +78,14 @@ export default function Step1PersonalInfo({
               type="tel"
               value={formData.mobileNumber}
               placeholder="+91"
+              disabled={formData.mobileNumber.length === 10}
               onChange={(e) => updateFormData({ mobileNumber: e.target.value })}
-              className="w-full bg-surface-container-low border border-outline-variant rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/10 transition-all font-medium"
+              className="w-full bg-surface-container-low border border-outline-variant rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/10 transition-all font-medium disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-surface-container"
             />
           </div>
+          {formData.mobileNumber.length === 10 && (
+            <p className="text-xs text-secondary ml-1">✓ Verified via login</p>
+          )}
         </div>
 
         <div className="space-y-1.5">

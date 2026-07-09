@@ -66,12 +66,16 @@ const TOTAL_STEPS = 5;
 
 interface BusinessLoanFlowProps {
   onExit: () => void;
+  userMobile?: string;
   key?: Key;
 }
 
-export default function BusinessLoanFlow({ onExit }: BusinessLoanFlowProps) {
+export default function BusinessLoanFlow({ onExit, userMobile }: BusinessLoanFlowProps) {
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState<BusinessFormData>(initialFormData);
+  const [formData, setFormData] = useState<BusinessFormData>({
+    ...initialFormData,
+    mobile: userMobile || '',
+  });
   const [applicationId, setApplicationId] = useState<string | null>(null);
 
   // Create a draft application on mount
