@@ -51,7 +51,7 @@ const initialFormData: BusinessFormData = {
   state: '',
   ownership: 'Owned',
   address: '',
-  yearsAtAddress: 5,
+  yearsAtAddress: 0,
 };
 
 const STEP_LABELS: Record<number, string> = {

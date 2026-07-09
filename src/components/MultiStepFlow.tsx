@@ -34,7 +34,7 @@ export type FormData = {
 };
 
 const initialFormData: FormData = {
-  mobileNumber: '+91 98765 43210',
+  mobileNumber: '',
   firstName: '',
   lastName: '',
   dob: '',
@@ -47,11 +47,11 @@ const initialFormData: FormData = {
   employerName: '',
   monthlyIncome: 75000,
   pincode: '',
-  city: 'New Delhi',
-  state: 'Delhi',
+  city: '',
+  state: '',
   address: '',
   residenceType: 'Owned',
-  yearsAtAddress: 5,
+  yearsAtAddress: 0,
 };
 
 export default function MultiStepFlow({ onExit }: { onExit: () => void; key?: Key }) {
