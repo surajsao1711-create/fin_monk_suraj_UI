@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Key } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { createBusinessLoan, updateBusinessLoanStep, submitBusinessLoan } from '../../lib/api';
 import BLStep1PromoterInfo from './steps/BLStep1PromoterInfo';
 import BLStep2LoanRequirement from './steps/BLStep2LoanRequirement';
 import BLStep3BusinessDetails from './steps/BLStep3BusinessDetails';
@@ -71,6 +72,16 @@ interface BusinessLoanFlowProps {
 export default function BusinessLoanFlow({ onExit }: BusinessLoanFlowProps) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<BusinessFormData>(initialFormData);
+  const [applicationId, setApplicationId] = useState<string | null>(null);
+
+  // Create a draft application on mount
+  useEffect(() => {
+    createBusinessLoan().then((res) => {
+      if (res.success && res.data?.id) {
+        setApplicationId(res.data.id);
+      }
+    }).catch(console.error);
+  }, []);
 
   const nextStep = () => setStep((s: number) => s + 1);
   const prevStep = () => setStep((s: number) => s - 1);
@@ -80,20 +91,63 @@ export default function BusinessLoanFlow({ onExit }: BusinessLoanFlowProps) {
     setFormData((prev: BusinessFormData) => ({ ...prev, ...data }));
   };
 
+  const saveAndNext = async (stepName: 'promoter-info' | 'loan-requirement' | 'business-details' | 'business-address', data: Record<string, any>) => {
+    if (applicationId) {
+      await updateBusinessLoanStep(applicationId, stepName, data).catch(console.error);
+    }
+    nextStep();
+  };
+
+  const handleSubmit = async () => {
+    if (applicationId) {
+      await submitBusinessLoan(applicationId).catch(console.error);
+    }
+    nextStep();
+  };
+
   const progress = Math.min((step / TOTAL_STEPS) * 100, 100);
 
   const renderStep = () => {
     switch (step) {
       case 1:
-        return <BLStep1PromoterInfo formData={formData} updateFormData={updateFormData} onNext={nextStep} />;
+        return <BLStep1PromoterInfo formData={formData} updateFormData={updateFormData} onNext={() => {
+          saveAndNext('promoter-info', {
+            fullName: formData.fullName,
+            mobile: formData.mobile,
+            pan: formData.pan,
+            dob: formData.dob,
+            email: formData.email,
+          });
+        }} />;
       case 2:
-        return <BLStep2LoanRequirement formData={formData} updateFormData={updateFormData} onNext={nextStep} onBack={prevStep} />;
+        return <BLStep2LoanRequirement formData={formData} updateFormData={updateFormData} onNext={() => {
+          saveAndNext('loan-requirement', {
+            loanAmount: formData.loanAmount,
+            tenure: formData.tenure,
+          });
+        }} onBack={prevStep} />;
       case 3:
-        return <BLStep3BusinessDetails formData={formData} updateFormData={updateFormData} onNext={nextStep} onBack={prevStep} />;
+        return <BLStep3BusinessDetails formData={formData} updateFormData={updateFormData} onNext={() => {
+          saveAndNext('business-details', {
+            businessName: formData.businessName,
+            industry: formData.industry,
+            gstin: formData.gstin,
+            annualTurnover: parseInt(formData.turnover) || 0,
+          });
+        }} onBack={prevStep} />;
       case 4:
-        return <BLStep4BusinessAddress formData={formData} updateFormData={updateFormData} onNext={nextStep} onBack={prevStep} />;
+        return <BLStep4BusinessAddress formData={formData} updateFormData={updateFormData} onNext={() => {
+          saveAndNext('business-address', {
+            addressLine: formData.address,
+            locality: formData.locality,
+            state: formData.state,
+            pincode: formData.pincode,
+            ownership: formData.ownership,
+            yearsAtAddress: formData.yearsAtAddress,
+          });
+        }} onBack={prevStep} />;
       case 5:
-        return <BLStep5ReviewSubmit formData={formData} onNext={nextStep} onBack={prevStep} onEdit={goToStep} />;
+        return <BLStep5ReviewSubmit formData={formData} onNext={handleSubmit} onBack={prevStep} onEdit={goToStep} />;
       case 6:
         return <BLStep6Success formData={formData} onExit={onExit} />;
       default:

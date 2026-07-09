@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Key } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { createCarLoan, updateCarLoanStep, submitCarLoan } from '../../lib/api';
 import CLStep1PersonalInfo from './steps/CLStep1PersonalInfo';
 import CLStep2CarDetails from './steps/CLStep2CarDetails';
 import CLStep3LoanDetails from './steps/CLStep3LoanDetails';
@@ -66,6 +67,16 @@ interface CarLoanFlowProps {
 export default function CarLoanFlow({ onExit }: CarLoanFlowProps) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<CarLoanFormData>(initialFormData);
+  const [applicationId, setApplicationId] = useState<string | null>(null);
+
+  // Create a draft application on mount
+  useEffect(() => {
+    createCarLoan().then((res) => {
+      if (res.success && res.data?.id) {
+        setApplicationId(res.data.id);
+      }
+    }).catch(console.error);
+  }, []);
 
   const nextStep = () => setStep((s: number) => s + 1);
   const prevStep = () => setStep((s: number) => s - 1);
@@ -75,20 +86,65 @@ export default function CarLoanFlow({ onExit }: CarLoanFlowProps) {
     setFormData((prev: CarLoanFormData) => ({ ...prev, ...data }));
   };
 
+  const saveAndNext = async (stepName: 'personal-info' | 'car-details' | 'loan-details' | 'employment' | 'consent', data: Record<string, any>) => {
+    if (applicationId) {
+      await updateCarLoanStep(applicationId, stepName, data).catch(console.error);
+    }
+    nextStep();
+  };
+
+  const handleSubmit = async () => {
+    if (applicationId) {
+      await submitCarLoan(applicationId).catch(console.error);
+    }
+    nextStep();
+  };
+
   const progress = Math.min((step / TOTAL_STEPS) * 100, 100);
 
   const renderStep = () => {
     switch (step) {
       case 1:
-        return <CLStep1PersonalInfo formData={formData} updateFormData={updateFormData} onNext={nextStep} />;
+        return <CLStep1PersonalInfo formData={formData} updateFormData={updateFormData} onNext={() => {
+          saveAndNext('personal-info', {
+            fullName: formData.fullName,
+            mobile: formData.mobile,
+            email: formData.email || undefined,
+          });
+          // Also save consent
+          if (applicationId) {
+            updateCarLoanStep(applicationId, 'consent', {
+              consentCall: formData.consentCall,
+              consentWhatsapp: formData.consentWhatsapp,
+            }).catch(console.error);
+          }
+        }} />;
       case 2:
-        return <CLStep2CarDetails formData={formData} updateFormData={updateFormData} onNext={nextStep} onBack={prevStep} />;
+        return <CLStep2CarDetails formData={formData} updateFormData={updateFormData} onNext={() => {
+          saveAndNext('car-details', {
+            product: formData.product,
+            rcOwnership: formData.rcOwnership.toUpperCase(),
+            carBrand: formData.carBrand,
+            carYear: formData.carYear,
+          });
+        }} onBack={prevStep} />;
       case 3:
-        return <CLStep3LoanDetails formData={formData} updateFormData={updateFormData} onNext={nextStep} onBack={prevStep} />;
+        return <CLStep3LoanDetails formData={formData} updateFormData={updateFormData} onNext={() => {
+          saveAndNext('loan-details', {
+            carValue: formData.carValue,
+            loanAmount: formData.loanAmount,
+            city: formData.city,
+          });
+        }} onBack={prevStep} />;
       case 4:
-        return <CLStep4Employment formData={formData} updateFormData={updateFormData} onNext={nextStep} onBack={prevStep} />;
+        return <CLStep4Employment formData={formData} updateFormData={updateFormData} onNext={() => {
+          saveAndNext('employment', {
+            employmentType: formData.employmentType,
+            monthlyIncome: formData.monthlyIncome,
+          });
+        }} onBack={prevStep} />;
       case 5:
-        return <CLStep5ReviewSubmit formData={formData} onNext={nextStep} onBack={prevStep} onEdit={goToStep} />;
+        return <CLStep5ReviewSubmit formData={formData} onNext={handleSubmit} onBack={prevStep} onEdit={goToStep} />;
       case 6:
         return <CLStep6Success formData={formData} onExit={onExit} />;
       default:

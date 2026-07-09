@@ -3,6 +3,7 @@ import type { Key } from 'react';
 import { ChevronDown, Check, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 import FinMonkLogo from '../FinMonkLogo';
+import { login } from '../../lib/api';
 
 interface LoginScreenProps {
   onContinue: (phone: string) => void;
@@ -14,8 +15,9 @@ export function LoginScreen({ onContinue }: LoginScreenProps) {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const digits = phone.replace(/\D/g, '');
@@ -29,7 +31,20 @@ export function LoginScreen({ onContinue }: LoginScreenProps) {
     }
 
     setError('');
-    onContinue(digits);
+    setLoading(true);
+
+    try {
+      const result = await login(digits);
+      if (result.success) {
+        onContinue(digits);
+      } else {
+        setError(result.message || 'Login failed. Please try again.');
+      }
+    } catch (err) {
+      setError('Network error. Please check your connection.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -148,9 +163,10 @@ export function LoginScreen({ onContinue }: LoginScreenProps) {
 
           <button
             type="submit"
-            className="w-full rounded-xl blue-gradient py-4 text-lg font-bold text-white shadow-xl shadow-secondary/20 transition-all hover:scale-[1.02] hover:shadow-2xl active:scale-95"
+            disabled={loading}
+            className="w-full rounded-xl blue-gradient py-4 text-lg font-bold text-white shadow-xl shadow-secondary/20 transition-all hover:scale-[1.02] hover:shadow-2xl active:scale-95 disabled:opacity-60 disabled:hover:scale-100"
           >
-            Continue Securely
+            {loading ? 'Connecting...' : 'Continue Securely'}
           </button>
         </form>
 

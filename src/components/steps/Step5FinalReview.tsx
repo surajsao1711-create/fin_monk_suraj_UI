@@ -16,10 +16,10 @@ export default function Step5FinalReview({
 
   const handleSubmit = () => {
     setIsSubmitting(true);
-    // Simulate API call
+    // Call the real submit handler (parent handles API call)
     setTimeout(() => {
       onNext();
-    }, 2500);
+    }, 1500);
   };
 
   const sections = [

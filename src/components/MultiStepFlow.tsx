@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Key } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ArrowRight, ShieldCheck, Zap, Info, CheckCircle, Smartphone, User, Calendar, CreditCard, Mail, Building2, MapPin, Home, Clock, Lock, Sparkles, Building } from 'lucide-react';
+import { createPersonalLoan, updatePersonalLoanStep, submitPersonalLoan } from '../lib/api';
 
 // Steps components will be imported or defined here
 import Step1PersonalInfo from './steps/Step1PersonalInfo';
@@ -56,6 +57,16 @@ const initialFormData: FormData = {
 export default function MultiStepFlow({ onExit }: { onExit: () => void; key?: Key }) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [applicationId, setApplicationId] = useState<string | null>(null);
+
+  // Create a draft application when the flow starts
+  useEffect(() => {
+    createPersonalLoan().then((res) => {
+      if (res.success && res.data?.id) {
+        setApplicationId(res.data.id);
+      }
+    }).catch(console.error);
+  }, []);
 
   const nextStep = () => setStep(s => s + 1);
   const prevStep = () => setStep(s => s - 1);
@@ -64,13 +75,59 @@ export default function MultiStepFlow({ onExit }: { onExit: () => void; key?: Ke
     setFormData(prev => ({ ...prev, ...data }));
   };
 
+  // Save step data to backend, then advance
+  const saveAndNext = async (stepName: 'personal-info' | 'loan-details' | 'employment' | 'address', data: Record<string, any>) => {
+    if (applicationId) {
+      await updatePersonalLoanStep(applicationId, stepName, data).catch(console.error);
+    }
+    nextStep();
+  };
+
+  // Submit the application
+  const handleSubmit = async () => {
+    if (applicationId) {
+      await submitPersonalLoan(applicationId).catch(console.error);
+    }
+    nextStep();
+  };
+
   const renderStep = () => {
     switch (step) {
-      case 1: return <Step1PersonalInfo formData={formData} updateFormData={updateFormData} onNext={nextStep} />;
-      case 2: return <Step2LoanDetails formData={formData} updateFormData={updateFormData} onNext={nextStep} onBack={prevStep} />;
-      case 3: return <Step3EmploymentIncome formData={formData} updateFormData={updateFormData} onNext={nextStep} onBack={prevStep} />;
-      case 4: return <Step4AddressVerification formData={formData} updateFormData={updateFormData} onNext={nextStep} onBack={prevStep} />;
-      case 5: return <Step5FinalReview formData={formData} onNext={nextStep} onBack={prevStep} />;
+      case 1: return <Step1PersonalInfo formData={formData} updateFormData={updateFormData} onNext={() => {
+        saveAndNext('personal-info', {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          dob: formData.dob,
+          pan: formData.panNumber,
+          mobile: formData.mobileNumber.replace(/\D/g, '').slice(-10),
+        });
+      }} />;
+      case 2: return <Step2LoanDetails formData={formData} updateFormData={updateFormData} onNext={() => {
+        saveAndNext('loan-details', {
+          loanAmount: formData.loanAmount,
+          loanTenure: formData.loanTenure,
+          loanPurpose: formData.loanPurpose,
+        });
+      }} onBack={prevStep} />;
+      case 3: return <Step3EmploymentIncome formData={formData} updateFormData={updateFormData} onNext={() => {
+        saveAndNext('employment', {
+          employmentType: formData.employmentType,
+          employerName: formData.employerName,
+          monthlyIncome: formData.monthlyIncome,
+        });
+      }} onBack={prevStep} />;
+      case 4: return <Step4AddressVerification formData={formData} updateFormData={updateFormData} onNext={() => {
+        saveAndNext('address', {
+          addressLine: formData.address,
+          city: formData.city,
+          state: formData.state,
+          pincode: formData.pincode,
+          residenceType: formData.residenceType,
+          yearsAtAddress: formData.yearsAtAddress,
+        });
+      }} onBack={prevStep} />;
+      case 5: return <Step5FinalReview formData={formData} onNext={handleSubmit} onBack={prevStep} />;
       case 6: return <Step6Success formData={formData} onExit={onExit} />;
       default: return null;
     }
