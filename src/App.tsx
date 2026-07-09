@@ -188,8 +188,27 @@ function MainApp() {
 // ─── Car loan route ("/carloan") ──────────────────────────────────────────────
 function CarLoanPage() {
   const navigate = useNavigate();
+  const [loggedIn, setLoggedIn] = useState(() => !!localStorage.getItem('finmonk_access_token'));
 
   const handleExit = () => navigate('/');
+
+  const handleLogin = (_phone: string) => {
+    setLoggedIn(true);
+  };
+
+  if (!loggedIn) {
+    return (
+      <>
+        <Header onStart={() => navigate('/')} />
+        <main className="flex-grow">
+          <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-12 bg-surface dark:bg-surface">
+            <LoginScreen onContinue={handleLogin} />
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
