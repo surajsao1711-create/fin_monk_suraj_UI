@@ -94,13 +94,14 @@ export default function MultiStepFlow({ onExit }: { onExit: () => void; key?: Ke
   const renderStep = () => {
     switch (step) {
       case 1: return <Step1PersonalInfo formData={formData} updateFormData={updateFormData} onNext={() => {
+        const mobile = formData.mobileNumber.replace(/\D/g, '').slice(-10);
         saveAndNext('personal-info', {
           firstName: formData.firstName,
           lastName: formData.lastName,
           email: formData.email,
-          dob: formData.dob,
-          pan: formData.panNumber,
-          mobile: formData.mobileNumber.replace(/\D/g, '').slice(-10),
+          dob: formData.dob || undefined,
+          pan: formData.panNumber || undefined,
+          mobile: mobile.length === 10 ? mobile : undefined,
         });
       }} />;
       case 2: return <Step2LoanDetails formData={formData} updateFormData={updateFormData} onNext={() => {
