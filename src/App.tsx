@@ -4,21 +4,19 @@
  */
 
 import { useState } from 'react';
-import type { Key } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'motion/react';
+import { motion } from 'motion/react';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import LandingPage from './components/LandingPage';
 import MultiStepFlow from './components/MultiStepFlow';
 import BusinessLoanFlow from './components/businessLoan/BusinessLoanFlow';
 import CarLoanFlow from './components/carLoan/CarLoanFlow';
 import { LoginScreen } from './components/otpVerification/MobileNumberStep';
 
-type View = 'landing' | 'otp-mobile' | 'loan-select' | 'personal-flow' | 'business-flow' | 'car-flow';
-
 // ─── Loan type selection screen ───────────────────────────────────────────────
-function LoanTypeSelect({ onSelect }: { onSelect: (type: 'personal' | 'business' | 'car') => void; key?: Key }) {
+function LoanTypeSelect() {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-12 bg-surface dark:bg-surface">
       <motion.div
@@ -36,9 +34,8 @@ function LoanTypeSelect({ onSelect }: { onSelect: (type: 'personal' | 'business'
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Personal loan card */}
           <button
-            onClick={() => onSelect('personal')}
+            onClick={() => navigate('/personal-loan')}
             className="glass-card group p-8 rounded-[32px] border border-outline-variant/30 text-left hover:border-secondary hover:shadow-xl transition-all duration-300 space-y-4"
           >
             <div className="w-14 h-14 rounded-2xl bg-secondary/10 flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
@@ -55,16 +52,13 @@ function LoanTypeSelect({ onSelect }: { onSelect: (type: 'personal' | 'business'
             </div>
             <div className="flex flex-wrap gap-2">
               {['Up to ₹40L', '10.5% p.a.', '5 min approval'].map((tag) => (
-                <span key={tag} className="text-xs font-semibold text-secondary bg-secondary/10 px-3 py-1 rounded-full">
-                  {tag}
-                </span>
+                <span key={tag} className="text-xs font-semibold text-secondary bg-secondary/10 px-3 py-1 rounded-full">{tag}</span>
               ))}
             </div>
           </button>
 
-          {/* Business loan card */}
           <button
-            onClick={() => onSelect('business')}
+            onClick={() => navigate('/business-loan')}
             className="glass-card group p-8 rounded-[32px] border border-outline-variant/30 text-left hover:border-secondary hover:shadow-xl transition-all duration-300 space-y-4"
           >
             <div className="w-14 h-14 rounded-2xl bg-secondary/10 flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
@@ -83,16 +77,13 @@ function LoanTypeSelect({ onSelect }: { onSelect: (type: 'personal' | 'business'
             </div>
             <div className="flex flex-wrap gap-2">
               {['Up to ₹5Cr', '12.5% p.a.', 'NBFC backed'].map((tag) => (
-                <span key={tag} className="text-xs font-semibold text-secondary bg-secondary/10 px-3 py-1 rounded-full">
-                  {tag}
-                </span>
+                <span key={tag} className="text-xs font-semibold text-secondary bg-secondary/10 px-3 py-1 rounded-full">{tag}</span>
               ))}
             </div>
           </button>
 
-          {/* Car loan card */}
           <button
-            onClick={() => onSelect('car')}
+            onClick={() => navigate('/car-loan')}
             className="glass-card group p-8 rounded-[32px] border border-outline-variant/30 text-left hover:border-secondary hover:shadow-xl transition-all duration-300 space-y-4"
           >
             <div className="w-14 h-14 rounded-2xl bg-secondary/10 flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
@@ -110,9 +101,7 @@ function LoanTypeSelect({ onSelect }: { onSelect: (type: 'personal' | 'business'
             </div>
             <div className="flex flex-wrap gap-2">
               {['Up to ₹10L', '14% p.a.', '24hr disbursal'].map((tag) => (
-                <span key={tag} className="text-xs font-semibold text-secondary bg-secondary/10 px-3 py-1 rounded-full">
-                  {tag}
-                </span>
+                <span key={tag} className="text-xs font-semibold text-secondary bg-secondary/10 px-3 py-1 rounded-full">{tag}</span>
               ))}
             </div>
           </button>
@@ -122,114 +111,110 @@ function LoanTypeSelect({ onSelect }: { onSelect: (type: 'personal' | 'business'
   );
 }
 
-// ─── Main application flow (default route "/") ────────────────────────────────
-function MainApp() {
-  const [view, setView] = useState<View>('landing');
-  const [userMobile, setUserMobile] = useState('');
-  const navigate = useNavigate();
+// ─── Home page: "/" → Login then Loan Select ──────────────────────────────────
+function HomePage() {
+  const [loggedIn, setLoggedIn] = useState(() => !!localStorage.getItem('finmonk_access_token'));
 
-  const handleGetStarted = () => setView('otp-mobile');
-
-  const handleMobileContinue = (phone: string) => {
-    setUserMobile(phone);
-    setView('loan-select');
-  };
-
-  const handleLoanSelect = (type: 'personal' | 'business' | 'car') => {
-    if (type === 'car') {
-      navigate('/carloan');
-    } else {
-      setView(type === 'personal' ? 'personal-flow' : 'business-flow');
-    }
-  };
-
-  const handleExit = () => {
-    setView('landing');
+  const handleLogin = (phone: string) => {
+    localStorage.setItem('finmonk_user_mobile', phone);
+    setLoggedIn(true);
   };
 
   return (
     <>
-      <Header onStart={handleGetStarted} />
-      <main className="flex-grow">
-        <AnimatePresence mode="wait">
-          {view === 'landing' && (
-            <LandingPage key="landing" onStart={handleGetStarted} />
-          )}
-
-          {view === 'otp-mobile' && (
-            <div
-              key="login"
-              className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-12 bg-surface dark:bg-surface"
-            >
-              <LoginScreen
-                key="login-screen"
-                onContinue={handleMobileContinue}
-              />
-            </div>
-          )}
-
-          {view === 'loan-select' && (
-            <LoanTypeSelect key="loan-select" onSelect={handleLoanSelect} />
-          )}
-
-          {view === 'personal-flow' && (
-            <MultiStepFlow key="personal-flow" onExit={handleExit} userMobile={userMobile} />
-          )}
-
-          {view === 'business-flow' && (
-            <BusinessLoanFlow key="business-flow" onExit={handleExit} userMobile={userMobile} />
-          )}
-        </AnimatePresence>
-      </main>
-      <Footer />
+      {!loggedIn ? (
+        <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-12 bg-surface dark:bg-surface">
+          <LoginScreen onContinue={handleLogin} />
+        </div>
+      ) : (
+        <LoanTypeSelect />
+      )}
     </>
   );
 }
 
-// ─── Car loan route ("/carloan") ──────────────────────────────────────────────
-function CarLoanPage() {
+// ─── Personal Loan page ───────────────────────────────────────────────────────
+function PersonalLoanPage() {
   const navigate = useNavigate();
   const [loggedIn, setLoggedIn] = useState(() => !!localStorage.getItem('finmonk_access_token'));
+  const [userMobile, setUserMobile] = useState(() => localStorage.getItem('finmonk_user_mobile') || '');
 
-  const handleExit = () => navigate('/');
-
-  const handleLogin = (_phone: string) => {
+  const handleLogin = (phone: string) => {
+    setUserMobile(phone);
+    localStorage.setItem('finmonk_user_mobile', phone);
     setLoggedIn(true);
   };
 
   if (!loggedIn) {
     return (
-      <>
-        <Header onStart={() => navigate('/')} />
-        <main className="flex-grow">
-          <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-12 bg-surface dark:bg-surface">
-            <LoginScreen onContinue={handleLogin} />
-          </div>
-        </main>
-        <Footer />
-      </>
+      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-12 bg-surface dark:bg-surface">
+        <LoginScreen onContinue={handleLogin} />
+      </div>
     );
   }
 
-  return (
-    <>
-      <Header onStart={() => navigate('/')} />
-      <main className="flex-grow">
-        <CarLoanFlow key="car-flow" onExit={handleExit} />
-      </main>
-      <Footer />
-    </>
-  );
+  return <MultiStepFlow onExit={() => navigate('/')} userMobile={userMobile} />;
+}
+
+// ─── Business Loan page ───────────────────────────────────────────────────────
+function BusinessLoanPage() {
+  const navigate = useNavigate();
+  const [loggedIn, setLoggedIn] = useState(() => !!localStorage.getItem('finmonk_access_token'));
+  const [userMobile, setUserMobile] = useState(() => localStorage.getItem('finmonk_user_mobile') || '');
+
+  const handleLogin = (phone: string) => {
+    setUserMobile(phone);
+    localStorage.setItem('finmonk_user_mobile', phone);
+    setLoggedIn(true);
+  };
+
+  if (!loggedIn) {
+    return (
+      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-12 bg-surface dark:bg-surface">
+        <LoginScreen onContinue={handleLogin} />
+      </div>
+    );
+  }
+
+  return <BusinessLoanFlow onExit={() => navigate('/')} userMobile={userMobile} />;
+}
+
+// ─── Car Loan page ────────────────────────────────────────────────────────────
+function CarLoanPage() {
+  const navigate = useNavigate();
+  const [loggedIn, setLoggedIn] = useState(() => !!localStorage.getItem('finmonk_access_token'));
+
+  const handleLogin = (phone: string) => {
+    localStorage.setItem('finmonk_user_mobile', phone);
+    setLoggedIn(true);
+  };
+
+  if (!loggedIn) {
+    return (
+      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-12 bg-surface dark:bg-surface">
+        <LoginScreen onContinue={handleLogin} />
+      </div>
+    );
+  }
+
+  return <CarLoanFlow onExit={() => navigate('/')} />;
 }
 
 // ─── Root app with routes ─────────────────────────────────────────────────────
 export default function App() {
   return (
     <div className="min-h-screen flex flex-col bg-surface dark:bg-surface selection:bg-secondary/20 selection:text-secondary">
-      <Routes>
-        <Route path="/" element={<MainApp />} />
-        <Route path="/carloan" element={<CarLoanPage />} />
-      </Routes>
+      <Header onStart={() => {}} />
+      <main className="flex-grow">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/personal-loan" element={<PersonalLoanPage />} />
+          <Route path="/business-loan" element={<BusinessLoanPage />} />
+          <Route path="/car-loan" element={<CarLoanPage />} />
+          <Route path="/carloan" element={<CarLoanPage />} />
+        </Routes>
+      </main>
+      <Footer />
     </div>
   );
 }
