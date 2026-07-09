@@ -1,7 +1,54 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FormData } from '../MultiStepFlow';
 import { User, Smartphone, Calendar, CreditCard, Mail, Info } from 'lucide-react';
 
+// ─── Validation helpers ───────────────────────────────────────────────────────
+function validateStep1(formData: FormData): Record<string, string> {
+  const errors: Record<string, string> = {};
+
+  if (!formData.firstName.trim()) {
+    errors.firstName = 'First name is required';
+  }
+  if (!formData.lastName.trim()) {
+    errors.lastName = 'Last name is required';
+  }
+
+  const mobile = formData.mobileNumber.replace(/\D/g, '');
+  if (!mobile || mobile.length !== 10) {
+    errors.mobileNumber = 'Enter a valid 10-digit mobile number';
+  } else if (!/^[6-9]/.test(mobile)) {
+    errors.mobileNumber = 'Mobile number must start with 6, 7, 8, or 9';
+  }
+
+  if (!formData.email.trim()) {
+    errors.email = 'Email is required';
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    errors.email = 'Enter a valid email address';
+  }
+
+  if (!formData.dob) {
+    errors.dob = 'Date of birth is required';
+  } else {
+    const dob = new Date(formData.dob);
+    const today = new Date();
+    const age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    const actualAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate()) ? age - 1 : age;
+    if (actualAge < 18) {
+      errors.dob = 'You must be at least 18 years old';
+    }
+  }
+
+  if (!formData.panNumber.trim()) {
+    errors.panNumber = 'PAN number is required';
+  } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
+    errors.panNumber = 'Invalid PAN format (e.g., ABCDE1234F)';
+  }
+
+  return errors;
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function Step1PersonalInfo({ 
   formData, 
   updateFormData, 
@@ -11,10 +58,37 @@ export default function Step1PersonalInfo({
   updateFormData: (data: Partial<FormData>) => void; 
   onNext: () => void;
 }) {
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const handleBlur = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    // Validate single field on blur
+    const allErrors = validateStep1(formData);
+    if (allErrors[field]) {
+      setErrors(prev => ({ ...prev, [field]: allErrors[field] }));
+    } else {
+      setErrors(prev => { const next = { ...prev }; delete next[field]; return next; });
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onNext();
+    const validationErrors = validateStep1(formData);
+    setErrors(validationErrors);
+    setTouched({ firstName: true, lastName: true, mobileNumber: true, email: true, dob: true, panNumber: true });
+
+    if (Object.keys(validationErrors).length === 0) {
+      onNext();
+    }
   };
+
+  const inputClass = (field: string) =>
+    `w-full bg-surface-container-low border rounded-2xl py-4 pl-12 pr-4 outline-none transition-all font-medium ${
+      errors[field] && touched[field]
+        ? 'border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-500/10'
+        : 'border-outline-variant focus:border-secondary focus:ring-4 focus:ring-secondary/10'
+    }`;
 
   return (
     <div className="flex flex-col lg:flex-row gap-12 items-start max-w-5xl mx-auto">
@@ -38,99 +112,126 @@ export default function Step1PersonalInfo({
       </div>
 
       <form onSubmit={handleSubmit} className="lg:w-1/2 w-full glass-card p-10 rounded-[32px] shadow-2xl space-y-6 border border-outline-variant/30">
+        {/* First + Last Name */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider ml-1">First Name</label>
             <div className="relative group">
               <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-secondary" />
               <input 
-                required
                 type="text"
                 value={formData.firstName}
                 placeholder="John"
                 onChange={(e) => updateFormData({ firstName: e.target.value })}
-                className="w-full bg-surface-container-low border border-outline-variant rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/10 transition-all font-medium"
+                onBlur={() => handleBlur('firstName')}
+                className={inputClass('firstName')}
               />
             </div>
+            {errors.firstName && touched.firstName && (
+              <p className="text-xs text-red-500 ml-1">{errors.firstName}</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider ml-1">Last Name</label>
             <div className="relative group">
               <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-secondary" />
               <input 
-                required
                 type="text"
                 value={formData.lastName}
                 placeholder="Doe"
                 onChange={(e) => updateFormData({ lastName: e.target.value })}
-                className="w-full bg-surface-container-low border border-outline-variant rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/10 transition-all font-medium"
+                onBlur={() => handleBlur('lastName')}
+                className={inputClass('lastName')}
               />
             </div>
+            {errors.lastName && touched.lastName && (
+              <p className="text-xs text-red-500 ml-1">{errors.lastName}</p>
+            )}
           </div>
         </div>
 
+        {/* Mobile */}
         <div className="space-y-1.5">
           <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider ml-1">Mobile Number</label>
           <div className="relative group">
             <Smartphone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-secondary" />
             <input 
-              required
               type="tel"
+              inputMode="numeric"
+              maxLength={10}
               value={formData.mobileNumber}
-              placeholder="+91"
+              placeholder="9876543210"
               disabled={formData.mobileNumber.length === 10}
-              onChange={(e) => updateFormData({ mobileNumber: e.target.value })}
-              className="w-full bg-surface-container-low border border-outline-variant rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/10 transition-all font-medium disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-surface-container"
+              onChange={(e) => updateFormData({ mobileNumber: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+              onBlur={() => handleBlur('mobileNumber')}
+              className={`${inputClass('mobileNumber')} disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-surface-container`}
             />
           </div>
-          {formData.mobileNumber.length === 10 && (
-            <p className="text-xs text-secondary ml-1">✓ Verified via login</p>
+          {formData.mobileNumber.length === 10 && !errors.mobileNumber && (
+            <p className="text-xs text-green-600 ml-1">✓ Verified via login</p>
+          )}
+          {errors.mobileNumber && touched.mobileNumber && (
+            <p className="text-xs text-red-500 ml-1">{errors.mobileNumber}</p>
           )}
         </div>
 
+        {/* Email */}
         <div className="space-y-1.5">
           <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider ml-1">Email Address</label>
           <div className="relative group">
             <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-secondary" />
             <input 
-              required
               type="email"
               value={formData.email}
               placeholder="john@example.com"
               onChange={(e) => updateFormData({ email: e.target.value })}
-              className="w-full bg-surface-container-low border border-outline-variant rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/10 transition-all font-medium"
+              onBlur={() => handleBlur('email')}
+              className={inputClass('email')}
             />
           </div>
+          {errors.email && touched.email && (
+            <p className="text-xs text-red-500 ml-1">{errors.email}</p>
+          )}
         </div>
 
+        {/* DOB + PAN */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider ml-1">Date of Birth</label>
             <div className="relative group">
               <Calendar size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-secondary" />
               <input 
-                required
                 type="date"
                 value={formData.dob}
                 onChange={(e) => updateFormData({ dob: e.target.value })}
-                className="w-full bg-surface-container-low border border-outline-variant rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/10 transition-all font-medium"
+                onBlur={() => handleBlur('dob')}
+                className={inputClass('dob')}
               />
             </div>
+            {errors.dob && touched.dob && (
+              <p className="text-xs text-red-500 ml-1">{errors.dob}</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider ml-1">PAN Number</label>
             <div className="relative group">
               <CreditCard size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-secondary" />
               <input 
-                required
                 type="text"
                 maxLength={10}
                 value={formData.panNumber}
                 placeholder="ABCDE1234F"
                 onChange={(e) => updateFormData({ panNumber: e.target.value.toUpperCase() })}
-                className="w-full bg-surface-container-low border border-outline-variant rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/10 transition-all font-medium uppercase"
+                onBlur={() => handleBlur('panNumber')}
+                className={`${inputClass('panNumber')} uppercase`}
               />
             </div>
+            {errors.panNumber && touched.panNumber && (
+              <p className="text-xs text-red-500 ml-1">{errors.panNumber}</p>
+            )}
+            {!errors.panNumber && formData.panNumber.length === 10 && touched.panNumber && (
+              <p className="text-xs text-green-600 ml-1">✓ Valid PAN format</p>
+            )}
           </div>
         </div>
 
