@@ -60,6 +60,9 @@ export default function Step1PersonalInfo({
 }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [consentCall, setConsentCall] = useState(false);
+  const [consentWhatsapp, setConsentWhatsapp] = useState(false);
+  const needsConsent = !localStorage.getItem('finmonk_consent_given');
 
   const handleBlur = (field: string) => {
     setTouched(prev => ({ ...prev, [field]: true }));
@@ -75,10 +78,19 @@ export default function Step1PersonalInfo({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const validationErrors = validateStep1(formData);
+    
+    // Check consent if needed
+    if (needsConsent && !consentCall) {
+      validationErrors.consent = 'Please agree to be contacted to continue';
+    }
+    
     setErrors(validationErrors);
-    setTouched({ firstName: true, lastName: true, mobileNumber: true, email: true, dob: true, panNumber: true });
+    setTouched({ firstName: true, lastName: true, mobileNumber: true, email: true, dob: true, panNumber: true, consent: true });
 
     if (Object.keys(validationErrors).length === 0) {
+      if (needsConsent) {
+        localStorage.setItem('finmonk_consent_given', 'true');
+      }
       onNext();
     }
   };
@@ -235,9 +247,42 @@ export default function Step1PersonalInfo({
           </div>
         </div>
 
+        {/* Consent — shown only when user came directly via /personal-loan (skipped login page) */}
+        {!localStorage.getItem('finmonk_consent_given') && (
+          <div className="space-y-3 pt-2 border-t border-outline-variant/30">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={consentCall}
+                onChange={(e) => setConsentCall(e.target.checked)}
+                className="mt-1 w-4 h-4 rounded border-outline-variant text-secondary focus:ring-secondary"
+              />
+              <span className="text-xs text-on-surface-variant leading-relaxed">
+                I agree to be contacted by FinMonk and its lending partners via phone and SMS regarding my loan application.
+                <span className="text-secondary font-medium"> (Required)</span>
+              </span>
+            </label>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={consentWhatsapp}
+                onChange={(e) => setConsentWhatsapp(e.target.checked)}
+                className="mt-1 w-4 h-4 rounded border-outline-variant text-secondary focus:ring-secondary"
+              />
+              <span className="text-xs text-on-surface-variant leading-relaxed">
+                I also agree to be contacted on WhatsApp for faster updates. <span className="font-medium">(Optional)</span>
+              </span>
+            </label>
+            {errors.consent && touched.consent && (
+              <p className="text-xs text-red-500 ml-1">{errors.consent}</p>
+            )}
+          </div>
+        )}
+
         <button 
           type="submit"
-          className="w-full gradient-button text-white py-5 rounded-2xl font-bold text-lg hover:scale-[1.02] transition-transform active:scale-95 shadow-xl shadow-secondary/20 mt-4"
+          disabled={!localStorage.getItem('finmonk_consent_given') && !consentCall}
+          className="w-full gradient-button text-white py-5 rounded-2xl font-bold text-lg hover:scale-[1.02] transition-transform active:scale-95 shadow-xl shadow-secondary/20 mt-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
         >
           Verify & Continue
         </button>
