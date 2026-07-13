@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import { ThemeProvider } from './context/ThemeContext.tsx';
+import { initPostHog } from './lib/posthog.ts';
 import './index.css';
 
 /**
@@ -16,6 +17,9 @@ import './index.css';
     document.documentElement.classList.add('dark');
   }
 })();
+
+// Initialize PostHog analytics
+initPostHog();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

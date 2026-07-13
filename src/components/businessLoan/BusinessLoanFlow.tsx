@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Key } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { createBusinessLoan, updateBusinessLoanStep, submitBusinessLoan } from '../../lib/api';
+import { PostHog } from '../../lib/posthog';
 import BLStep1PromoterInfo from './steps/BLStep1PromoterInfo';
 import BLStep2LoanRequirement from './steps/BLStep2LoanRequirement';
 import BLStep3BusinessDetails from './steps/BLStep3BusinessDetails';
@@ -80,6 +81,7 @@ export default function BusinessLoanFlow({ onExit, userMobile }: BusinessLoanFlo
 
   // Create a draft application on mount
   useEffect(() => {
+    PostHog.loanFlowStarted('business');
     createBusinessLoan().then((res) => {
       if (res.success && res.data?.id) {
         setApplicationId(res.data.id);
@@ -105,6 +107,7 @@ export default function BusinessLoanFlow({ onExit, userMobile }: BusinessLoanFlo
   const handleSubmit = async () => {
     if (applicationId) {
       await submitBusinessLoan(applicationId).catch(console.error);
+      PostHog.loanSubmitted('business', applicationId);
     }
     nextStep();
   };

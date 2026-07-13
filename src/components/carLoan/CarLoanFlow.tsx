@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Key } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { createCarLoan, updateCarLoanStep, submitCarLoan } from '../../lib/api';
+import { PostHog } from '../../lib/posthog';
 import CLStep1PersonalInfo from './steps/CLStep1PersonalInfo';
 import CLStep2CarDetails from './steps/CLStep2CarDetails';
 import CLStep3LoanDetails from './steps/CLStep3LoanDetails';

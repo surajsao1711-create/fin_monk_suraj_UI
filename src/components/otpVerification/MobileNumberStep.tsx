@@ -4,6 +4,7 @@ import { ChevronDown, Check, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 import FinMonkLogo from '../FinMonkLogo';
 import { login } from '../../lib/api';
+import { PostHog, identifyUser } from '../../lib/posthog';
 
 interface LoginScreenProps {
   onContinue: (phone: string) => void;
@@ -37,6 +38,10 @@ export function LoginScreen({ onContinue }: LoginScreenProps) {
       const result = await login(digits);
       if (result.success) {
         localStorage.setItem('finmonk_consent_given', 'true');
+        // Track login and identify user
+        identifyUser(result.data.user.id, digits);
+        PostHog.loginCompleted(digits);
+        PostHog.consentGiven(termsAccepted, consentAccepted);
         onContinue(digits);
       } else {
         setError(result.message || 'Login failed. Please try again.');

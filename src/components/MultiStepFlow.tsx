@@ -3,6 +3,7 @@ import type { Key } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ArrowRight, ShieldCheck, Zap, Info, CheckCircle, Smartphone, User, Calendar, CreditCard, Mail, Building2, MapPin, Home, Clock, Lock, Sparkles, Building } from 'lucide-react';
 import { createPersonalLoan, updatePersonalLoanStep, submitPersonalLoan } from '../lib/api';
+import { PostHog } from '../lib/posthog';
 
 // Steps components will be imported or defined here
 import Step1PersonalInfo from './steps/Step1PersonalInfo';
