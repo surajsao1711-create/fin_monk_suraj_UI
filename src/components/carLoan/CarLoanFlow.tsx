@@ -72,6 +72,7 @@ export default function CarLoanFlow({ onExit }: CarLoanFlowProps) {
 
   // Create a draft application on mount
   useEffect(() => {
+    PostHog.loanFlowStarted('car');
     createCarLoan().then((res) => {
       if (res.success && res.data?.id) {
         setApplicationId(res.data.id);
@@ -97,6 +98,7 @@ export default function CarLoanFlow({ onExit }: CarLoanFlowProps) {
   const handleSubmit = async () => {
     if (applicationId) {
       await submitCarLoan(applicationId).catch(console.error);
+      PostHog.loanSubmitted('car', applicationId);
     }
     nextStep();
   };

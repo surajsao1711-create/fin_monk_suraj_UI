@@ -66,6 +66,7 @@ export default function MultiStepFlow({ onExit, userMobile }: { onExit: () => vo
   // Create a draft application when the flow starts
   useEffect(() => {
     console.log('[FinMonk] Creating personal loan draft...');
+    PostHog.loanFlowStarted('personal');
     createPersonalLoan().then((res) => {
       console.log('[FinMonk] Create result:', res);
       if (res.success && res.data?.id) {
@@ -99,6 +100,7 @@ export default function MultiStepFlow({ onExit, userMobile }: { onExit: () => vo
       });
       console.log(`[FinMonk] Save result:`, result);
     }
+    PostHog.loanStepCompleted('personal', step, stepName);
     nextStep();
   };
 
@@ -106,6 +108,7 @@ export default function MultiStepFlow({ onExit, userMobile }: { onExit: () => vo
   const handleSubmit = async () => {
     if (applicationId) {
       await submitPersonalLoan(applicationId).catch(console.error);
+      PostHog.loanSubmitted('personal', applicationId);
     }
     nextStep();
   };
